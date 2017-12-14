@@ -15,7 +15,8 @@ type point struct {
 }
 
 type runway struct {
-	name    string
+	nameA   string
+	nameB   string
 	endA    point
 	endB    point
 	heading int
@@ -49,6 +50,7 @@ func initDb() error {
 	defer airportFile.Close()
 
 	airportReader := csv.NewReader(airportFile)
+	_, err = airportReader.Read()
 	for {
 		record, err := airportReader.Read()
 		if err == io.EOF {
@@ -57,10 +59,16 @@ func initDb() error {
 		if err != nil {
 			return err
 		}
+		apt := airport{id: record[1],
+		               name: record[3]}
 		fmt.Println(record)
+		fmt.Println(apt)
+		break
 	}
 
 	runwayReader := csv.NewReader(runwayFile)
+	runwayReader.FieldsPerRecord = -1   // stray comma in file header
+	_, err = runwayReader.Read()
 	for {
 		record, err := runwayReader.Read()
 		if err == io.EOF {
@@ -70,6 +78,7 @@ func initDb() error {
 			return err
 		}
 		fmt.Println("RUNWAY:", record)
+		break
 	}
 
 	return nil
