@@ -5,6 +5,12 @@ import "fmt"
 import "github.com/coreos/bbolt"
 import "github.com/vmihailenco/msgpack"
 import "os"
+import "math"
+
+type point struct {
+	latitude  float64
+	longitude float64
+}
 
 func buildDB(rebuild bool) (*bolt.DB, error) {
 	db, err := bolt.Open("aptdata.db", 0644, nil)
@@ -68,6 +74,32 @@ func getRunways(db *bolt.DB, ident string) ([]*runway, error) {
 	return runways, nil
 }
 
+func runwayBoundingBox(runways []*runway) [4]point {
+	var maxLatitude, minLatitude, maxLongitude, minLongitude float64
+	minLatitude = 90
+	minLongitude = 180
+	maxLatitude = -90
+	maxLongitude = -180
+
+	for _, runway := range runways {
+		rwyMaxLatitude := math.Max(runway.End1Latitude, runway.End2Latitude)
+		rwyMinLatitude := math.Min(runway.End1Latitude, runway.End2Latitude)
+		rwyMaxLongitude := math.Max(runway.End1Longitude, runway.End2Longitude)
+		rwyMinLongitude := math.Min(runway.End1Longitude, runway.End2Longitude)
+
+		maxLatitude = math.Max(maxLatitude, rwyMaxLatitude)
+		minLatitude = math.Min(minLatitude, rwyMinLatitude)
+		maxLongitude = math.Max(maxLongitude, rwyMaxLongitude)
+		minLongitude = math.Min(minLongitude, rwyMinLongitude)
+	}
+
+	return [4]point{
+		point{maxLatitude, minLongitude},
+		point{maxLatitude, maxLongitude},
+		point{minLatitude, minLongitude},
+		point{minLatitude, maxLongitude}}
+}
+
 func main() {
 	db, err := buildDB(false)
 	if err != nil {
@@ -113,4 +145,5 @@ func main() {
 		fmt.Println(*runway)
 	}
 
+	fmt.Println(runwayBoundingBox(runways))
 }
