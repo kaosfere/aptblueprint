@@ -5,7 +5,6 @@ import "fmt"
 import "github.com/coreos/bbolt"
 import "github.com/vmihailenco/msgpack"
 import "os"
-import "math"
 
 type point struct {
 	latitude  float64
@@ -74,30 +73,17 @@ func getRunways(db *bolt.DB, ident string) ([]*runway, error) {
 	return runways, nil
 }
 
-func runwayBoundingBox(runways []*runway) [4]point {
-	var maxLatitude, minLatitude, maxLongitude, minLongitude float64
-	minLatitude = 90
-	minLongitude = 180
-	maxLatitude = -90
-	maxLongitude = -180
-
-	for _, runway := range runways {
-		rwyMaxLatitude := math.Max(runway.End1Latitude, runway.End2Latitude)
-		rwyMinLatitude := math.Min(runway.End1Latitude, runway.End2Latitude)
-		rwyMaxLongitude := math.Max(runway.End1Longitude, runway.End2Longitude)
-		rwyMinLongitude := math.Min(runway.End1Longitude, runway.End2Longitude)
-
-		maxLatitude = math.Max(maxLatitude, rwyMaxLatitude)
-		minLatitude = math.Min(minLatitude, rwyMinLatitude)
-		maxLongitude = math.Max(maxLongitude, rwyMaxLongitude)
-		minLongitude = math.Min(minLongitude, rwyMinLongitude)
+func filterForCoords(raw []*runway) []*runway {
+	filtered := []*runway{}
+	for _, r := range raw {
+		if (r.End1Latitude == 0 && r.End1Longitude == 0) ||
+			(r.End2Latitude == 0 && r.End2Longitude == 0) {
+			continue
+		}
+		filtered = append(filtered, r)
 	}
 
-	return [4]point{
-		point{maxLatitude, minLongitude},
-		point{maxLatitude, maxLongitude},
-		point{minLatitude, minLongitude},
-		point{minLatitude, maxLongitude}}
+	return filtered
 }
 
 func main() {
@@ -106,44 +92,18 @@ func main() {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
-	/*	err = db.View(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte("Airports"))
-			aptg := b.Get([]byte("KORD"))
-			if aptg == nil {
-				fmt.Println("NADA")
-				return nil
-			}
-			msgpack.Unmarshal(aptg, &apt)
-			fmt.Println(apt)
 
-			b = tx.Bucket([]byte("Runways"))
-			wayg := b.Bucket([]byte("KORD"))
-			wayg.ForEach(func(k, v []byte) error {
-				fmt.Printf("key=%s, value=%s\n", k, v)
-				return nil
-			})
-			if wayg == nil {
-				fmt.Println("NADA BUCKET")
-				return nil
-			}
-
-				fmt.Println("sub bucket", wayg)
-				msgpack.Unmarshal(wayg, &rwy)
-				fmt.Println(rwy)
-			return nil
-		})
-		if err != nil {
-			fmt.Println("POOP", err)
-		}
-	*/
-	runways, err := getRunways(db, "KORD")
+	runways, err := getRunways(db, "KDEN")
+	runways = filterForCoords(runways)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	for _, runway := range runways {
-		fmt.Println(*runway)
+
+	for _, x := range runways {
+		fmt.Println(x)
 	}
 
-	fmt.Println(runwayBoundingBox(runways))
+	drawAirport(runways)
+
 }
