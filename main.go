@@ -111,13 +111,11 @@ func main() {
 */
 
 func main() {
-	db, err := aptdata.OpenDB("aptdata.db")
+	db, err := aptdata.OpenDB("aptdata.db", true)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	err = aptdata.DownloadData("data/airports.csv")
 	fmt.Println(err)
 	db.Close()
 }
