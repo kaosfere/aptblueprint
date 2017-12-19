@@ -1,9 +1,10 @@
 package main
 
-import "github.com/pkg/errors"
+import _ "github.com/pkg/errors"
 import "fmt"
-import "github.com/coreos/bbolt"
-import "github.com/vmihailenco/msgpack"
+import _ "github.com/coreos/bbolt"
+import _ "github.com/vmihailenco/msgpack"
+import "git.rcj.io/aptdata"
 import "os"
 
 type point struct {
@@ -11,7 +12,7 @@ type point struct {
 	longitude float64
 }
 
-func buildDB(rebuild bool) (*bolt.DB, error) {
+/*func buildDB(rebuild bool) (*bolt.DB, error) {
 	db, err := bolt.Open("aptdata.db", 0644, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "database open failed")
@@ -106,4 +107,17 @@ func main() {
 
 	drawAirport(runways)
 
+}
+*/
+
+func main() {
+	db, err := aptdata.OpenDB("aptdata.db")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	err = aptdata.DownloadData("data/airports.csv")
+	fmt.Println(err)
+	db.Close()
 }
