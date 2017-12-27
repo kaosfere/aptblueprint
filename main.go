@@ -111,11 +111,29 @@ func main() {
 */
 
 func main() {
-	db, err := aptdata.OpenDB("aptdata.db", true)
+	db, err := aptdata.OpenDB("aptdata.db")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	fmt.Println(err)
+
+	if !db.Populated() {
+		fmt.Println("Loading DB")
+		err = db.Load("data")
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	runways, err := db.GetRunways("KORD")
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		for _, runway := range runways {
+			fmt.Println(runway)
+		}
+	}
 	db.Close()
 }
