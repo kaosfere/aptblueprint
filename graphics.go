@@ -3,6 +3,7 @@ package main
 import "math"
 import _ "fmt"
 import "github.com/fogleman/gg"
+import "git.rcj.io/aptdata"
 
 type boundingBox [4]point
 type runwayCoords [2]point
@@ -61,7 +62,7 @@ func maxLongitude(coords []runwayCoords) float64 {
 	return max
 }
 
-func drawAirport(runways []*runway) {
+func drawAirport(runways []*aptdata.Runway) {
 	endpoints := make([]runwayCoords, len(runways))
 
 	for i, r := range runways {
