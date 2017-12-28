@@ -41,7 +41,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	runways, err := db.GetRunways("KDEN")
+	runways, err := db.GetRunways("KPWK")
 	runways = filterForCoords(runways)
 	if err != nil {
 		fmt.Println(err)
