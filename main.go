@@ -43,6 +43,7 @@ func main() {
 
 	var code string
 	var runways []*aptdata.Runway
+	minRunways := 2
 
 	codes, err := db.GetCodes()
 	rand.Seed(time.Now().Unix())
@@ -57,7 +58,7 @@ func main() {
 
 		runways = filterForCoords(runways)
 		fmt.Println(len(runways), "runways found")
-		if len(runways) > 0 {
+		if len(runways) >= minRunways {
 			break
 		}
 	}

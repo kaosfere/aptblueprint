@@ -8,7 +8,7 @@ import "github.com/kellydunn/golang-geo"
 import "image/color"
 
 const SideLength = 640
-const OuterMargin = 10
+const OuterMargin = 100
 const ChartSideLength = SideLength - OuterMargin
 
 func kmToFeet(km float64) (feet float64) {
@@ -139,25 +139,28 @@ func drawAirport(runways []*aptdata.Runway, code string, name string, city strin
 	textWidth := math.Max(nWidth, lWidth)
 	boxWidth := textWidth + float64(textMargin*2)
 	boxHeight := nHeight + lHeight + float64(textMargin*2+lineSpacing)
+	fmt.Println(boxHeight)
 
 	// Clear out a box for the text to fit into
-	var boxX, boxY float64
+	//var boxX, boxY float64
+	var boxX float64
 	boxX = float64(SideLength - boxWidth)
-	boxY = float64(boxHeight)
+	//boxY = float64(boxHeight)
 	canvas.DrawRectangle(boxX, 0, boxWidth, boxHeight)
 	canvas.SetColor(blueprint)
 	canvas.Fill()
 
 	// And put a border on it
-	canvas.DrawLine(boxX, 0, boxX, boxY)
+	/*canvas.DrawLine(boxX, 0, boxX, boxY)
 	canvas.DrawLine(boxX, boxY, SideLength, boxY)
 	canvas.SetColor(white)
 	canvas.Stroke()
-
+	*/
 	//	canvas.SetRGB(0.016, 0.246, 0.547)
 	//canvas.DrawRectangle(0, 0, 200, 200)
 	//canvas.Fill()
 
+	canvas.SetColor(white)
 	canvas.DrawString(nameCode, SideLength-textMargin-nWidth, nHeight+textMargin)
 	canvas.DrawString(location, SideLength-textMargin-lWidth, nHeight+lHeight+textMargin+lineSpacing)
 	canvas.SavePNG("out.png")
