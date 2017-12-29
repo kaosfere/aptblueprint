@@ -6,7 +6,7 @@ import "github.com/fogleman/gg"
 import "git.rcj.io/aptdata"
 import "github.com/kellydunn/golang-geo"
 
-const LongSide = 1000
+const SideLength = 640
 
 //type boundingBox [4]geo.Point
 //type rwyEndpoints [2]geo.Point
@@ -118,59 +118,47 @@ func drawAirport(runways []*aptdata.Runway) {
 
 	var xDimension, yDimension int
 	if xDistance > yDistance {
-		xDimension = LongSide
-		yDimension = round(LongSide / xyDistanceRatio)
+		xDimension = SideLength
+		yDimension = round(SideLength / xyDistanceRatio)
 	} else {
-		yDimension = LongSide
-		xDimension = round(LongSide * xyDistanceRatio)
+		yDimension = SideLength
+		xDimension = round(SideLength * xyDistanceRatio)
 	}
 
 	fmt.Println("XDistance:", xDistance, "YDistance:", yDistance, "xyDR:", xyDistanceRatio, "xDim:", xDimension, "yDim", yDimension)
+	lngAdjFactor := float64(xDimension) / xLongDistance
+	latAdjFactor := float64(yDimension) / yLatDistance
+	fmt.Println("lngAdj:", lngAdjFactor, "latAdj:", latAdjFactor)
 
-	/*
-		fmt.Println("xDistanceFeet:", xDistance, "yDistanceFeet:", yDistance)
-		xScaleFactor := xDistance / XSize
-		yScaleFactor := yDistance / YSize
-		scaleFactor := math.Max(xScaleFactor, yScaleFactor)
-		XYRatio := xDistance / yDistance
-		fmt.Println("XYRatio:", XYRatio)
-		XYLLRatio := xLongDistance / yLatDistance
-		fmt.Println("XYLLRatio:", XYLLRatio)
+	adjEndpoints := make([][2][2]float64, len(runways))
+	for i, r := range endpoints {
+		adjEndpoints[i] = [2][2]float64{{float64(round((r[0].Lat() - minLatitude) * latAdjFactor)),
+			float64(round((r[0].Lng() - minLongitude) * lngAdjFactor))},
+			{float64(round((r[1].Lat() - minLatitude) * latAdjFactor)),
+				float64(round((r[1].Lng() - minLongitude) * lngAdjFactor))}}
+	}
+	fmt.Println(adjEndpoints)
 
-		fmt.Println(xScaleFactor, yScaleFactor, "max:", scaleFactor)
-
-		adjEndpoints := make([][2][2]float64, len(runways))
-		yAdjFactor := 1000 / (math.Max(xLongDistance, yLatDistance))
-		xAdjFactor := yAdjFactor * XYRatio
-		fmt.Println("xadjfactor:", xAdjFactor, "yadjfactor", yAdjFactor)
-
-		for i, r := range endpoints {
-			adjEndpoints[i] = [2][2]float64{{round((r[0].Lat() - minLatitude) * xAdjFactor),
-				round((r[0].Lng() - minLongitude) * yAdjFactor)},
-				{round((r[1].Lat() - minLatitude) * xAdjFactor),
-					round((r[1].Lng() - minLongitude) * yAdjFactor)}}
-		}
-		fmt.Println(adjEndpoints)
-	*/
 	canvas := gg.NewContext(xDimension, yDimension)
 	canvas.InvertY()
-	canvas.SetRGB(1, 1, 1)
+	canvas.SetRGB(0.016, 0.246, 0.547)
 	canvas.Clear()
-	canvas.SetRGB(1, 0, 0)
-	canvas.SetLineWidth(1)
-	/*
-		for _, p := range adjEndpoints {
-			canvas.DrawLine(p[0][1], p[0][0],
-				p[1][1], p[1][0])
-		}
-		canvas.Stroke()
-		//	plot := canvas.Image()
-		//	fmt.Println("BOUNDS ARE", plot.Bounds())
+	canvas.SetRGB(1, 1, 1)
+	canvas.SetLineWidth(3)
 
-		//	canvas = gg.NewContext(1200, 1200)
-		//	canvas.SetRGB(1, 1, 1)
-		//	canvas.Clear()
-		//	canvas.DrawImage(plot, (1200-XSize)/2, (1200-YSize)/2)
-	*/
+	for _, p := range adjEndpoints {
+		canvas.DrawLine(p[0][1], p[0][0],
+			p[1][1], p[1][0])
+	}
+	canvas.Stroke()
+
+	plot := canvas.Image()
+	fmt.Println("BOUNDS ARE", plot.Bounds())
+
+	canvas = gg.NewContext(SideLength, SideLength)
+	canvas.SetRGB(0.016, 0.246, 0.547)
+	canvas.Clear()
+	canvas.DrawImage(plot, (SideLength-xDimension)/2, (SideLength-yDimension)/2)
+
 	canvas.SavePNG("out.png")
 }
