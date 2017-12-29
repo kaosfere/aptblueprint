@@ -163,5 +163,9 @@ func drawAirport(runways []*aptdata.Runway, code string, name string, city strin
 	canvas.SetColor(white)
 	canvas.DrawString(nameCode, SideLength-textMargin-nWidth, nHeight+textMargin)
 	canvas.DrawString(location, SideLength-textMargin-lWidth, nHeight+lHeight+textMargin+lineSpacing)
+
+	// Finally, draw a border all around it
+	canvas.DrawRectangle(0, 0, SideLength, SideLength)
+	canvas.Stroke()
 	canvas.SavePNG("out.png")
 }
