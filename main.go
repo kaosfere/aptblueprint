@@ -29,14 +29,23 @@ func filterForCoords(raw []*aptdata.Runway) []*aptdata.Runway {
 }
 
 func doConfig() error {
-	viper.SetConfigName(".drawport")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("$HOME")
+	viper.SetConfigName("aptblueprint")
+
+	viper.SetDefault("datadir", "data")
 
 	return viper.ReadInConfig()
 }
 
 func main() {
+	err := doConfig()
+
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("Error loading config.  Proceeding with defaults.")
+	}
+
 	db, err := aptdata.OpenDB("aptdata.db")
 	if err != nil {
 		fmt.Println(err)
@@ -44,6 +53,7 @@ func main() {
 	}
 
 	if !db.Populated() {
+		aptdata.DownloadData(viper.GetString("datadir"))
 		fmt.Println("Loading DB")
 		err = db.Load("data")
 	}
