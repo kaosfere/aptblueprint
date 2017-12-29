@@ -5,8 +5,11 @@ import "fmt"
 import "github.com/fogleman/gg"
 import "git.rcj.io/aptdata"
 import "github.com/kellydunn/golang-geo"
+import "image/color"
 
 const SideLength = 640
+const OuterMargin = 10
+const ChartSideLength = SideLength - OuterMargin
 
 //type boundingBox [4]geo.Point
 //type rwyEndpoints [2]geo.Point
@@ -117,12 +120,13 @@ func drawAirport(runways []*aptdata.Runway) {
 	xyDistanceRatio = float64(xDistance) / float64(yDistance)
 
 	var xDimension, yDimension int
+
 	if xDistance > yDistance {
-		xDimension = SideLength
-		yDimension = round(SideLength / xyDistanceRatio)
+		xDimension = ChartSideLength
+		yDimension = round(ChartSideLength / xyDistanceRatio)
 	} else {
-		yDimension = SideLength
-		xDimension = round(SideLength * xyDistanceRatio)
+		yDimension = ChartSideLength
+		xDimension = round(ChartSideLength * xyDistanceRatio)
 	}
 
 	fmt.Println("XDistance:", xDistance, "YDistance:", yDistance, "xyDR:", xyDistanceRatio, "xDim:", xDimension, "yDim", yDimension)
@@ -139,26 +143,82 @@ func drawAirport(runways []*aptdata.Runway) {
 	}
 	fmt.Println(adjEndpoints)
 
+	// DRAWING TIME!
+
+	// define the colors
+	blueprint := color.RGBA{4, 63, 140, 255}
+	white := color.RGBA{255, 255, 255, 255}
+
+	// Start with canvas shrink-wrapped to the airport size
 	canvas := gg.NewContext(xDimension, yDimension)
 	canvas.InvertY()
-	canvas.SetRGB(0.016, 0.246, 0.547)
+
+	// Fill the entire box with blueprint blue
+	canvas.SetColor(blueprint)
 	canvas.Clear()
-	canvas.SetRGB(1, 1, 1)
+
+	canvas.SetColor(white)
 	canvas.SetLineWidth(3)
 
+	// Draw a line for each runway
 	for _, p := range adjEndpoints {
 		canvas.DrawLine(p[0][1], p[0][0],
 			p[1][1], p[1][0])
 	}
+
+	// Now stroke the lot of them
 	canvas.Stroke()
 
-	plot := canvas.Image()
-	fmt.Println("BOUNDS ARE", plot.Bounds())
+	// Render the chart to an Image
+	chart := canvas.Image()
 
+	// Switch to a new context the full size of our picture
 	canvas = gg.NewContext(SideLength, SideLength)
-	canvas.SetRGB(0.016, 0.246, 0.547)
-	canvas.Clear()
-	canvas.DrawImage(plot, (SideLength-xDimension)/2, (SideLength-yDimension)/2)
 
+	// Fill it with blueprint blue
+	canvas.SetColor(blueprint)
+	canvas.Clear()
+
+	// Now render the chart image centered in the box
+	canvas.DrawImage(chart, (SideLength-xDimension)/2, (SideLength-yDimension)/2)
+
+	// Time to do some labelling!
+	canvas.LoadFontFace("flux.ttf", 12)
+	canvas.SetLineWidth(3)
+	// TODO: Get these from the database
+	name := "Chicago Executive Airport (KPWK)"
+	location := "Wheeling, IL, USA"
+
+	// Get the dimensions of our text
+	nWidth, nHeight := canvas.MeasureString(name)
+	lWidth, lHeight := canvas.MeasureString(location)
+
+	// And calculate dimensions of its box
+	textMargin := float64(10)
+	lineSpacing := float64(8)
+	textWidth := math.Max(nWidth, lWidth)
+	boxWidth := textWidth + float64(textMargin*2)
+	boxHeight := nHeight + lHeight + float64(textMargin*2+lineSpacing)
+
+	// Clear out a box for the text to fit into
+	var boxX, boxY float64
+	boxX = float64(SideLength - boxWidth)
+	boxY = float64(boxHeight)
+	canvas.DrawRectangle(boxX, 0, boxWidth, boxHeight)
+	canvas.SetColor(blueprint)
+	canvas.Fill()
+
+	// And put a border on it
+	canvas.DrawLine(boxX, 0, boxX, boxY)
+	canvas.DrawLine(boxX, boxY, SideLength, boxY)
+	canvas.SetColor(white)
+	canvas.Stroke()
+
+	//	canvas.SetRGB(0.016, 0.246, 0.547)
+	//canvas.DrawRectangle(0, 0, 200, 200)
+	//canvas.Fill()
+
+	canvas.DrawString(name, SideLength-textMargin-nWidth, nHeight+textMargin)
+	canvas.DrawString(location, SideLength-textMargin-lWidth, nHeight+lHeight+textMargin+lineSpacing)
 	canvas.SavePNG("out.png")
 }
