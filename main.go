@@ -1,10 +1,14 @@
 package main
 
-import "fmt"
-import "git.rcj.io/aptdata"
-import "os"
-import "math/rand"
-import "time"
+import (
+	"fmt"
+	"math/rand"
+	"os"
+	"time"
+
+	"git.rcj.io/aptdata"
+	"github.com/spf13/viper"
+)
 
 type point struct {
 	latitude  float64
@@ -22,6 +26,14 @@ func filterForCoords(raw []*aptdata.Runway) []*aptdata.Runway {
 	}
 
 	return filtered
+}
+
+func doConfig() error {
+	viper.SetConfigName(".drawport")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME")
+
+	return viper.ReadInConfig()
 }
 
 func main() {
