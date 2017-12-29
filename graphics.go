@@ -76,7 +76,7 @@ func round(raw float64) (rounded int) {
 	return int(math.Floor(raw + .5))
 }
 
-func drawAirport(runways []*aptdata.Runway) {
+func drawAirport(runways []*aptdata.Runway, code string, name string, city string, region string, country string) {
 	endpoints := make([][2]*geo.Point, len(runways))
 	var minLatitude, maxLatitude, minLongitude, maxLongitude float64
 	var nePoint, nwPoint, sePoint, swPoint *geo.Point
@@ -186,11 +186,11 @@ func drawAirport(runways []*aptdata.Runway) {
 	canvas.LoadFontFace("flux.ttf", 12)
 	canvas.SetLineWidth(3)
 	// TODO: Get these from the database
-	name := "Chicago Executive Airport (KPWK)"
-	location := "Wheeling, IL, USA"
+	nameCode := fmt.Sprintf("%s (%s)", name, code)
+	location := fmt.Sprintf("%s, %s, %s", city, region, country)
 
 	// Get the dimensions of our text
-	nWidth, nHeight := canvas.MeasureString(name)
+	nWidth, nHeight := canvas.MeasureString(nameCode)
 	lWidth, lHeight := canvas.MeasureString(location)
 
 	// And calculate dimensions of its box
@@ -218,7 +218,7 @@ func drawAirport(runways []*aptdata.Runway) {
 	//canvas.DrawRectangle(0, 0, 200, 200)
 	//canvas.Fill()
 
-	canvas.DrawString(name, SideLength-textMargin-nWidth, nHeight+textMargin)
+	canvas.DrawString(nameCode, SideLength-textMargin-nWidth, nHeight+textMargin)
 	canvas.DrawString(location, SideLength-textMargin-lWidth, nHeight+lHeight+textMargin+lineSpacing)
 	canvas.SavePNG("out.png")
 }
