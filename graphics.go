@@ -11,63 +11,6 @@ const SideLength = 640
 const OuterMargin = 10
 const ChartSideLength = SideLength - OuterMargin
 
-//type boundingBox [4]geo.Point
-//type rwyEndpoints [2]geo.Point
-
-/*func translate(p point, x float64, y float64) point {
-	p.latitude -= x
-	p.longitude -= y
-	return p
-}
-
-func scale(p point, factor float64) point {
-	p.latitude *= factor
-	p.longitude *= factor
-	return p
-}
-
-func round(p point) point {
-	p.latitude = math.Floor(p.latitude + 0.5)
-	p.longitude = math.Floor(p.longitude + 0.5)
-	return p
-}*/
-
-/*func minLatitude(coords []runwayCoords) float64 {
-	min := coords[0][0].latitude
-	for _, c := range coords {
-		min = math.Min(min, c[0].latitude)
-		min = math.Min(min, c[1].latitude)
-	}
-	return min
-}
-
-func minLongitude(coords []runwayCoords) float64 {
-	min := coords[0][0].longitude
-	for _, c := range coords {
-		min = math.Min(min, c[0].longitude)
-		min = math.Min(min, c[1].longitude)
-	}
-	return min
-}
-
-func maxLatitude(coords []runwayCoords) float64 {
-	max := coords[0][0].latitude
-	for _, c := range coords {
-		max = math.Max(max, c[0].latitude)
-		max = math.Max(max, c[1].latitude)
-	}
-	return max
-}
-
-func maxLongitude(coords []runwayCoords) float64 {
-	max := coords[0][0].longitude
-	for _, c := range coords {
-		max = math.Max(max, c[0].longitude)
-		max = math.Max(max, c[1].longitude)
-	}
-	return max
-}*/
-
 func kmToFeet(km float64) (feet float64) {
 	return km * 3280.4
 }
@@ -80,6 +23,7 @@ func drawAirport(runways []*aptdata.Runway, code string, name string, city strin
 	endpoints := make([][2]*geo.Point, len(runways))
 	var minLatitude, maxLatitude, minLongitude, maxLongitude float64
 	var nePoint, nwPoint, sePoint, swPoint *geo.Point
+
 	// Set some values we know will be reset by our data
 	minLatitude = 90
 	maxLatitude = -90
@@ -109,7 +53,6 @@ func drawAirport(runways []*aptdata.Runway, code string, name string, city strin
 	// lines as well?
 	xLongDistance := maxLongitude - minLongitude
 	yLatDistance := maxLatitude - minLatitude
-	fmt.Println("XLongDistance:", xLongDistance, "YLatDistance:", yLatDistance)
 
 	xDistance := round(kmToFeet(math.Max(nwPoint.GreatCircleDistance(nePoint),
 		swPoint.GreatCircleDistance(sePoint))))
@@ -129,10 +72,8 @@ func drawAirport(runways []*aptdata.Runway, code string, name string, city strin
 		xDimension = round(ChartSideLength * xyDistanceRatio)
 	}
 
-	fmt.Println("XDistance:", xDistance, "YDistance:", yDistance, "xyDR:", xyDistanceRatio, "xDim:", xDimension, "yDim", yDimension)
 	lngAdjFactor := float64(xDimension) / xLongDistance
 	latAdjFactor := float64(yDimension) / yLatDistance
-	fmt.Println("lngAdj:", lngAdjFactor, "latAdj:", latAdjFactor)
 
 	adjEndpoints := make([][2][2]float64, len(runways))
 	for i, r := range endpoints {
@@ -141,7 +82,6 @@ func drawAirport(runways []*aptdata.Runway, code string, name string, city strin
 			{float64(round((r[1].Lat() - minLatitude) * latAdjFactor)),
 				float64(round((r[1].Lng() - minLongitude) * lngAdjFactor))}}
 	}
-	fmt.Println(adjEndpoints)
 
 	// DRAWING TIME!
 
