@@ -10,16 +10,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-type point struct {
-	latitude  float64
-	longitude float64
-}
-
 func randomAirport(db *aptdata.AptDB) (code string, err error) {
 	var runways []*aptdata.Runway
 	minRunways := 2
 
 	codes, err := db.GetCodes()
+	if err != nil {
+		return "", err
+	}
+
 	rand.Seed(time.Now().Unix())
 	for {
 		code = codes[rand.Intn(len(codes))]
@@ -121,8 +120,8 @@ func doGenerate(ident string) (*aptdata.Airport, error) {
 		return apt, err
 	}
 
-	drawAirport(runways, ident, name, city, region.Name, country.Name)
-	return apt, nil
+	err = drawAirport(runways, ident, name, city, region.Name, country.Name)
+	return apt, err
 }
 
 func main() {
@@ -149,7 +148,7 @@ func main() {
 		fmt.Println("Generating random airport.")
 		_, err = doGenerate("")
 		if err != nil {
-			fmt.Println("Error generating airport: %s", err)
+			fmt.Printf("Error generating airport: %s\n", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
@@ -169,10 +168,10 @@ func main() {
 		if len(os.Args) > 2 {
 			ident := os.Args[2]
 			fmt.Printf("Generating %s.\n", ident)
-			apt, err = doGenerate(ident)
+			_, err = doGenerate(ident)
 		} else {
 			fmt.Println("Generating random airport.")
-			apt, err = doGenerate("")
+			_, err = doGenerate("")
 		}
 	case "post":
 		if len(os.Args) > 2 {
@@ -183,13 +182,16 @@ func main() {
 			fmt.Println("Generating random airport.")
 			apt, err = doGenerate("")
 		}
+		if err != nil {
+			break
+		}
 
 		creds := credentials{viper.GetString("consumer_key"),
 			viper.GetString("consumer_secret"), viper.GetString("access_token"),
 			viper.GetString("access_token_secret")}
 		err = post(creds, apt)
 	default:
-		fmt.Printf("%s [download|reload|generate]\n", os.Args[0])
+		fmt.Printf("%s [download|reload|generate|post]\n", os.Args[0])
 	}
 
 	if err != nil {

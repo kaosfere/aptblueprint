@@ -32,8 +32,8 @@ func post(c credentials, apt *aptdata.Airport) error {
 
 	mediaString := base64.StdEncoding.EncodeToString(data)
 
-	media, error := api.UploadMedia(mediaString)
-	if error != nil {
+	media, err := api.UploadMedia(mediaString)
+	if err != nil {
 		return err
 	}
 
@@ -48,6 +48,7 @@ func post(c credentials, apt *aptdata.Airport) error {
 	v.Set("media_ids", media.MediaIDString)
 	v.Set("lat", latitude)
 	v.Set("long", longitude)
+	v.Set("location", location)
 	v.Set("display_coordinates", "true")
 	//	tweet, err := api.PostTweet("", v)
 	//	spew.Dump(tweet)

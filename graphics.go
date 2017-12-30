@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-const SideLength = 640
-const OuterMargin = 100
-const ChartSideLength = SideLength - OuterMargin
+const sideLength = 640
+const outerMargin = 100
+const chartSideLength = sideLength - outerMargin
 
 func kmToFeet(km float64) (feet float64) {
 	return km * 3280.4
@@ -85,13 +85,13 @@ func calcPixels(runways []*aptdata.Runway) (pxEndpoints [][2][2]float64, xDimens
 	xyLengthRatio = float64(xLengthFeet) / float64(yLengthFeet)
 
 	// Set the dimension of each side in pixels witn the longest side being
-	// defined by ChartSideLength and the shorter by the xyLengthRatio.
+	// defined by chartSideLength and the shorter by the xyLengthRatio.
 	if xLengthFeet > yLengthFeet {
-		xDimension = ChartSideLength
-		yDimension = round(ChartSideLength / xyLengthRatio)
+		xDimension = chartSideLength
+		yDimension = round(chartSideLength / xyLengthRatio)
 	} else {
-		yDimension = ChartSideLength
-		xDimension = round(ChartSideLength * xyLengthRatio)
+		yDimension = chartSideLength
+		xDimension = round(chartSideLength * xyLengthRatio)
 	}
 
 	// Eacn axis needs to have its ration of distance in degrees to distance
@@ -113,7 +113,7 @@ func calcPixels(runways []*aptdata.Runway) (pxEndpoints [][2][2]float64, xDimens
 	return pxEndpoints, xDimension, yDimension
 }
 
-func drawAirport(runways []*aptdata.Runway, code string, name string, city string, region string, country string) {
+func drawAirport(runways []*aptdata.Runway, code string, name string, city string, region string, country string) error {
 	// Get our runway endpoints and image size as pixels.  The math is ugly,
 	// so it's contained in a seperate function.
 	pxEndpoints, xDimension, yDimension := calcPixels(runways)
@@ -147,17 +147,20 @@ func drawAirport(runways []*aptdata.Runway, code string, name string, city strin
 	chart := canvas.Image()
 
 	// Switch to a new context the full size of our picture
-	canvas = gg.NewContext(SideLength, SideLength)
+	canvas = gg.NewContext(sideLength, sideLength)
 
 	// Fill it with blueprint blue
 	canvas.SetColor(blueprint)
 	canvas.Clear()
 
 	// Now render the chart image centered in the box
-	canvas.DrawImage(chart, (SideLength-xDimension)/2, (SideLength-yDimension)/2)
+	canvas.DrawImage(chart, (sideLength-xDimension)/2, (sideLength-yDimension)/2)
 
 	// Time to do some labelling!
-	canvas.LoadFontFace(viper.GetString("font"), 12)
+	err := canvas.LoadFontFace(viper.GetString("font"), 12)
+	if err != nil {
+		return err
+	}
 	canvas.SetLineWidth(3)
 
 	// Set strings for our name and location.  Sometimes the city is empty
@@ -176,22 +179,23 @@ func drawAirport(runways []*aptdata.Runway, code string, name string, city strin
 	textMargin := float64(10)
 	lineSpacing := float64(8)
 	textWidth := math.Max(nWidth, lWidth)
-	boxWidth := textWidth + float64(textMargin*2)
-	boxHeight := nHeight + lHeight + float64(textMargin*2+lineSpacing)
+	boxWidth := textWidth + textMargin*2
+	boxHeight := nHeight + lHeight + textMargin*2 + lineSpacing
 
 	// Clear out a box for the text to fit into
-	boxX := float64(SideLength - boxWidth)
+	boxX := sideLength - boxWidth
 	canvas.DrawRectangle(boxX, 0, boxWidth, boxHeight)
 	canvas.SetColor(blueprint)
 	canvas.Fill()
 
 	// Add the text
 	canvas.SetColor(white)
-	canvas.DrawString(nameCode, SideLength-textMargin-nWidth, nHeight+textMargin)
-	canvas.DrawString(location, SideLength-textMargin-lWidth, nHeight+lHeight+textMargin+lineSpacing)
+	canvas.DrawString(nameCode, sideLength-textMargin-nWidth, nHeight+textMargin)
+	canvas.DrawString(location, sideLength-textMargin-lWidth, nHeight+lHeight+textMargin+lineSpacing)
 
 	// Finally, draw a border all around it
-	canvas.DrawRectangle(0, 0, SideLength, SideLength)
+	canvas.DrawRectangle(0, 0, sideLength, sideLength)
 	canvas.Stroke()
-	canvas.SavePNG(fmt.Sprintf("%s/%s", viper.GetString("outdir"), "out.png"))
+	err = canvas.SavePNG(fmt.Sprintf("%s/%s", viper.GetString("outdir"), "out.png"))
+	return err
 }
