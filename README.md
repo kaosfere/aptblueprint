@@ -5,4 +5,6 @@ This application grabs data from the free data at ourairports.com, sticks it in 
 ## todos
 
 * add an option for specifying the minimum number of runways
+* similarly, paramterize output picture size
+* skip file generation if in post mode, and just base64 the raw image data?
 * test suite!
