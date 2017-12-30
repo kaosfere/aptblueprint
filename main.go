@@ -15,6 +15,29 @@ type point struct {
 	longitude float64
 }
 
+func randomAirport(db *aptdata.AptDB) (code string, err error) {
+	var runways []*aptdata.Runway
+	minRunways := 2
+
+	codes, err := db.GetCodes()
+	rand.Seed(time.Now().Unix())
+	for {
+		code = codes[rand.Intn(len(codes))]
+		runways, err = db.GetRunways(code)
+
+		if err != nil {
+			return code, err
+		}
+
+		runways = filterForCoords(runways)
+		if len(runways) >= minRunways {
+			break
+		}
+	}
+
+	return code, nil
+}
+
 func filterForCoords(raw []*aptdata.Runway) []*aptdata.Runway {
 	filtered := []*aptdata.Runway{}
 	for _, r := range raw {
@@ -38,6 +61,68 @@ func doConfig() error {
 	return viper.ReadInConfig()
 }
 
+func doDownload() error {
+	err := aptdata.DownloadData(viper.GetString("datadir"))
+	return err
+}
+
+func doLoad() error {
+	dataDir := viper.GetString("datadir")
+	db, err := aptdata.OpenDB(fmt.Sprintf("%s/%s", dataDir, "aptdata.db"))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	return db.Reload(dataDir)
+}
+
+func doGenerate(ident string) error {
+	dataDir := viper.GetString("datadir")
+	db, err := aptdata.OpenDB(fmt.Sprintf("%s/%s", dataDir, "aptdata.db"))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	if !db.Populated() {
+		return fmt.Errorf("database not populated")
+	}
+
+	if ident == "" {
+		ident, err = randomAirport(db)
+		if err != nil {
+			return fmt.Errorf("Error picking airport: %s", err)
+		}
+	}
+
+	runways, err := db.GetRunways(ident)
+	if err != nil {
+		return err
+	}
+
+	apt, err := db.GetAirport(ident)
+	if err != nil {
+		return err
+	}
+
+	name := apt.Name
+	city := apt.City
+
+	region, err := db.GetRegion(apt.Region)
+	if err != nil {
+		return err
+	}
+
+	country, err := db.GetCountry(apt.Country)
+	if err != nil {
+		return err
+	}
+
+	drawAirport(runways, ident, name, city, region.Name, country.Name)
+	return nil
+}
+
 func main() {
 	err := doConfig()
 
@@ -57,56 +142,38 @@ func main() {
 		}
 	}
 
-	// TODO:  Make this not fail if datadir doesn't already exist
-	db, err := aptdata.OpenDB(fmt.Sprintf("%s/%s", dataDir, "aptdata.db"))
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	if !db.Populated() {
-		fmt.Println("Downloading data.")
-		err = aptdata.DownloadData(dataDir)
-		fmt.Println("Loading DB")
-		err = db.Load("data")
-	}
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	var code string
-	var runways []*aptdata.Runway
-	minRunways := 2
-
-	codes, err := db.GetCodes()
-	rand.Seed(time.Now().Unix())
-	for {
-		code = codes[rand.Intn(len(codes))]
-		runways, err = db.GetRunways(code)
-
+	if len(os.Args) == 1 {
+		fmt.Println("Generating random airport.")
+		err = doGenerate("")
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Error generating airport: %s", err)
 			os.Exit(1)
 		}
-
-		runways = filterForCoords(runways)
-		fmt.Println(len(runways), "runways found")
-		if len(runways) >= minRunways {
-			break
-		}
+		os.Exit(0)
 	}
 
-	runways = filterForCoords(runways)
+	switch os.Args[1] {
+	case "download":
+		fmt.Println("Downloading data.")
+		err = doDownload()
+	case "load", "reload":
+		fmt.Println("Loading database.")
+		err = doLoad()
+	case "generate":
+		if len(os.Args) > 2 {
+			ident := os.Args[2]
+			fmt.Printf("Generating %s.\n", ident)
+			err = doGenerate(ident)
+		} else {
+			fmt.Println("Generating random airport.")
+			err = doGenerate("")
+		}
+	default:
+		fmt.Printf("%s [download|reload|generate]\n", os.Args[0])
+	}
 
-	apt, err := db.GetAirport(code)
-	name := apt.Name
-	city := apt.City
-
-	region, err := db.GetRegion(apt.Region)
-	country, err := db.GetCountry(apt.Country)
-
-	drawAirport(runways, code, name, city, region.Name, country.Name)
-
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
