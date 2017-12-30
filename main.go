@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"git.rcj.io/aptdata"
+	"github.com/kaosfere/aptdata"
 	"github.com/spf13/viper"
 )
 
@@ -57,6 +57,8 @@ func doConfig() error {
 	viper.SetConfigName("aptblueprint")
 
 	viper.SetDefault("datadir", "data")
+	viper.SetDefault("outdir", ".")
+	viper.SetDefault("font", "flux.ttf")
 
 	return viper.ReadInConfig()
 }
@@ -153,8 +155,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	// TODO:  Pass back information on the airport chosen so that we can
-	// do fun stuff with the data as we post it.
+	// TODO: The interface here between genrate/post and the database feels
+	// a bit awkward, and could stand to be refactored.  If nothing else,
+	// it lacks a little bit of DRY.
 	switch os.Args[1] {
 	case "download":
 		fmt.Println("Downloading data.")

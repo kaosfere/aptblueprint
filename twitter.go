@@ -7,9 +7,10 @@ import (
 	"net/url"
 	"strconv"
 
-	"git.rcj.io/aptdata"
 	"github.com/ChimeraCoder/anaconda"
-	"github.com/davecgh/go-spew/spew"
+	_ "github.com/davecgh/go-spew/spew"
+	"github.com/kaosfere/aptdata"
+	"github.com/spf13/viper"
 )
 
 type credentials struct {
@@ -24,7 +25,7 @@ func post(c credentials, apt *aptdata.Airport) error {
 	anaconda.SetConsumerSecret(c.consumerSecret)
 	api := anaconda.NewTwitterApi(c.accessToken, c.accessTokenSecret)
 
-	data, err := ioutil.ReadFile("out.png")
+	data, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", viper.GetString("outdir"), "out.png"))
 	if err != nil {
 		return err
 	}
@@ -48,8 +49,8 @@ func post(c credentials, apt *aptdata.Airport) error {
 	v.Set("lat", latitude)
 	v.Set("long", longitude)
 	v.Set("display_coordinates", "true")
-	tweet, err := api.PostTweet("", v)
-	spew.Dump(tweet)
-	//_, err = api.PostTweet("", v)
+	//	tweet, err := api.PostTweet("", v)
+	//	spew.Dump(tweet)
+	_, err = api.PostTweet("", v)
 	return err
 }

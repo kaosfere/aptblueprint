@@ -1,11 +1,15 @@
 package main
 
-import "math"
-import "fmt"
-import "github.com/fogleman/gg"
-import "git.rcj.io/aptdata"
-import "github.com/kellydunn/golang-geo"
-import "image/color"
+import (
+	"fmt"
+	"image/color"
+	"math"
+
+	"github.com/fogleman/gg"
+	"github.com/kaosfere/aptdata"
+	"github.com/kellydunn/golang-geo"
+	"github.com/spf13/viper"
+)
 
 const SideLength = 640
 const OuterMargin = 100
@@ -153,7 +157,7 @@ func drawAirport(runways []*aptdata.Runway, code string, name string, city strin
 	canvas.DrawImage(chart, (SideLength-xDimension)/2, (SideLength-yDimension)/2)
 
 	// Time to do some labelling!
-	canvas.LoadFontFace("flux.ttf", 12)
+	canvas.LoadFontFace(viper.GetString("font"), 12)
 	canvas.SetLineWidth(3)
 
 	// Set strings for our name and location.  Sometimes the city is empty
@@ -189,5 +193,5 @@ func drawAirport(runways []*aptdata.Runway, code string, name string, city strin
 	// Finally, draw a border all around it
 	canvas.DrawRectangle(0, 0, SideLength, SideLength)
 	canvas.Stroke()
-	canvas.SavePNG("out.png")
+	canvas.SavePNG(fmt.Sprintf("%s/%s", viper.GetString("outdir"), "out.png"))
 }
