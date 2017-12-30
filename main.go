@@ -168,6 +168,11 @@ func main() {
 			fmt.Println("Generating random airport.")
 			err = doGenerate("")
 		}
+	case "post":
+		creds := credentials{viper.GetString("consumer_key"),
+			viper.GetString("consumer_secret"), viper.GetString("access_token"),
+			viper.GetString("access_token_secret")}
+		err = post(creds)
 	default:
 		fmt.Printf("%s [download|reload|generate]\n", os.Args[0])
 	}
