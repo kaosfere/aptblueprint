@@ -77,33 +77,33 @@ func doLoad() error {
 	return db.Reload(dataDir)
 }
 
-func doGenerate(ident string) error {
+func doGenerate(ident string) (*aptdata.Airport, error) {
 	dataDir := viper.GetString("datadir")
 	db, err := aptdata.OpenDB(fmt.Sprintf("%s/%s", dataDir, "aptdata.db"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer db.Close()
 
 	if !db.Populated() {
-		return fmt.Errorf("database not populated")
+		return nil, fmt.Errorf("database not populated")
 	}
 
 	if ident == "" {
 		ident, err = randomAirport(db)
 		if err != nil {
-			return fmt.Errorf("Error picking airport: %s", err)
+			return nil, fmt.Errorf("Error picking airport: %s", err)
 		}
-	}
-
-	runways, err := db.GetRunways(ident)
-	if err != nil {
-		return err
 	}
 
 	apt, err := db.GetAirport(ident)
 	if err != nil {
-		return err
+		return apt, err
+	}
+
+	runways, err := db.GetRunways(ident)
+	if err != nil {
+		return apt, err
 	}
 
 	name := apt.Name
@@ -111,20 +111,21 @@ func doGenerate(ident string) error {
 
 	region, err := db.GetRegion(apt.Region)
 	if err != nil {
-		return err
+		return apt, err
 	}
 
 	country, err := db.GetCountry(apt.Country)
 	if err != nil {
-		return err
+		return apt, err
 	}
 
 	drawAirport(runways, ident, name, city, region.Name, country.Name)
-	return nil
+	return apt, nil
 }
 
 func main() {
 	err := doConfig()
+	var apt *aptdata.Airport
 
 	if err != nil {
 		fmt.Println(err)
@@ -144,7 +145,7 @@ func main() {
 
 	if len(os.Args) == 1 {
 		fmt.Println("Generating random airport.")
-		err = doGenerate("")
+		_, err = doGenerate("")
 		if err != nil {
 			fmt.Println("Error generating airport: %s", err)
 			os.Exit(1)
@@ -152,6 +153,8 @@ func main() {
 		os.Exit(0)
 	}
 
+	// TODO:  Pass back information on the airport chosen so that we can
+	// do fun stuff with the data as we post it.
 	switch os.Args[1] {
 	case "download":
 		fmt.Println("Downloading data.")
@@ -163,16 +166,25 @@ func main() {
 		if len(os.Args) > 2 {
 			ident := os.Args[2]
 			fmt.Printf("Generating %s.\n", ident)
-			err = doGenerate(ident)
+			apt, err = doGenerate(ident)
 		} else {
 			fmt.Println("Generating random airport.")
-			err = doGenerate("")
+			apt, err = doGenerate("")
 		}
 	case "post":
+		if len(os.Args) > 2 {
+			ident := os.Args[2]
+			fmt.Printf("Generating %s.\n", ident)
+			apt, err = doGenerate(ident)
+		} else {
+			fmt.Println("Generating random airport.")
+			apt, err = doGenerate("")
+		}
+
 		creds := credentials{viper.GetString("consumer_key"),
 			viper.GetString("consumer_secret"), viper.GetString("access_token"),
 			viper.GetString("access_token_secret")}
-		err = post(creds)
+		err = post(creds, apt)
 	default:
 		fmt.Printf("%s [download|reload|generate]\n", os.Args[0])
 	}
